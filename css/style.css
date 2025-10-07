@@ -1,133 +1,135 @@
-:root{
-  --bg: #fff;
-  --muted: #6b7280;
-  --card-radius: 10px;
-  --shadow: 0 10px 30px rgba(12, 15, 20, 0.12);
-  --tooltip-bg: rgba(15, 15, 15, 0.88);
-  --tooltip-color: #fff;
+:root {
+  --dark-bg: rgba(0,0,0,0.85);
+  --dark-color: #fff;
+  --light-bg: #fff;
+  --light-color: #111;
+  --success-bg: #4caf50;
+  --error-bg: #f44336;
+  --warning-bg: #ff9800;
   --popover-bg: #fff;
-  --popover-border: #e6e6e6;
-  --transition-time: 150ms;
+  --border: #ddd;
+  --radius: 10px;
+  --shadow: 0 8px 24px rgba(0,0,0,0.15);
 }
 
-*{box-sizing:border-box}
 body {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  margin:0;
-  background: #f6f7fb;
-  color: #0b1220;
-  padding: 40px;
-  min-height:100vh;
-}
-.container { max-width:900px; margin:0 auto; position:relative; }
-
-h1 { margin: 0 0 18px 0; font-size: 20px; }
-
-.btn {
-  display:inline-block;
-  margin: 0 6px 6px 0;
-  padding: 8px 12px;
-  border-radius:8px;
-  border:1px solid #d7d7db;
-  background:#fff;
-  cursor:pointer;
-  font-size:14px;
+  font-family: "Inter", system-ui, sans-serif;
+  background: #f9fafb;
+  color: #111;
+  padding: 3rem;
+  text-align: center;
 }
 
-/* ---------------------------
-   Tooltip
-   --------------------------- */
+h1 {
+  margin-bottom: 1rem;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.controls label {
+  font-weight: 500;
+  margin-right: 0.4rem;
+}
+
+.demo-area {
+  margin-top: 3rem;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.demo-btn {
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, #e0e7ff, #f3f4f6);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow);
+}
+.demo-btn:hover {
+  transform: translateY(-2px);
+}
+
+/* Tooltip base */
 .tooltip {
   position: fixed;
-  z-index: 9999;
-  left:0; top:0;
-  max-width: 320px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: var(--tooltip-bg);
-  color: var(--tooltip-color);
-  font-size: 13px;
-  line-height: 1.25;
-  transform-origin: center;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  color: white;
+  z-index: 1000;
   opacity: 0;
-  transform: translateY(4px) scale(.98);
-  transition: opacity var(--transition-time) ease, transform var(--transition-time) ease;
+  transform: scale(0.9);
+  transition: all 0.25s ease;
   pointer-events: none;
   box-shadow: var(--shadow);
 }
+.tooltip.show { opacity: 1; transform: scale(1); }
 
-/* variant: success */
-.tooltip[data-variant="success"]{ background:#0f8f4a; color:#fff }
-.tooltip[data-variant="warning"]{ background:#b45309; color:#fff }
+/* Theme Variants */
+.tooltip[data-theme="dark"] { background: var(--dark-bg); color: var(--dark-color); }
+.tooltip[data-theme="light"] { background: var(--light-bg); color: var(--light-color); border: 1px solid var(--border); }
+.tooltip[data-theme="success"] { background: var(--success-bg); }
+.tooltip[data-theme="error"] { background: var(--error-bg); }
+.tooltip[data-theme="warning"] { background: var(--warning-bg); }
 
-/* placement arrow — we'll switch by data-placement */
+/* Placement (for arrow direction) */
 .tooltip::after {
   content: "";
   position: absolute;
-  width: 10px; height: 10px;
-  transform: rotate(45deg);
+  width: 8px;
+  height: 8px;
   background: inherit;
-  box-shadow: none;
+  transform: rotate(45deg);
+}
+.tooltip[data-placement="top"]::after {
+  bottom: -4px; left: 50%; transform: translateX(-50%) rotate(45deg);
+}
+.tooltip[data-placement="bottom"]::after {
+  top: -4px; left: 50%; transform: translateX(-50%) rotate(45deg);
+}
+.tooltip[data-placement="left"]::after {
+  right: -4px; top: 50%; transform: translateY(-50%) rotate(45deg);
+}
+.tooltip[data-placement="right"]::after {
+  left: -4px; top: 50%; transform: translateY(-50%) rotate(45deg);
 }
 
-/* arrow positions, adjusted at runtime by JS to align with trigger */
-.tooltip[data-placement="top"]::after { bottom: -5px; left: calc(50% - 5px); }
-.tooltip[data-placement="bottom"]::after { top: -5px; left: calc(50% - 5px); transform: rotate(225deg); }
-.tooltip[data-placement="left"]::after { right: -5px; top: calc(50% - 5px); transform: rotate(315deg); }
-.tooltip[data-placement="right"]::after { left: -5px; top: calc(50% - 5px); transform: rotate(135deg); }
-
-.tooltip.show {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-/* ---------------------------
-   Popover
-   --------------------------- */
+/* Popover */
 .popover {
   position: fixed;
-  z-index: 10000;
-  left:0; top:0;
-  min-width: 220px;
-  max-width: 420px;
   background: var(--popover-bg);
-  border: 1px solid var(--popover-border);
-  border-radius: var(--card-radius);
-  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
   box-shadow: var(--shadow);
+  min-width: 240px;
   opacity: 0;
-  transform: translateY(6px) scale(.98);
-  transition: opacity var(--transition-time) ease, transform var(--transition-time) ease;
-  outline: none;
+  transform: scale(0.9);
+  transition: all 0.25s ease;
+  z-index: 2000;
 }
+.popover.show { opacity: 1; transform: scale(1); }
 
-.popover.show { opacity: 1; transform: translateY(0) scale(1); }
-.popover__title { margin: 0 0 8px 0; font-weight:600; font-size:15px; }
-.popover__body { font-size: 14px; color: #222; }
-.popover__footer { margin-top: 12px; display:flex; gap:8px; justify-content: flex-end; }
+/* Animation Variants */
+.tooltip.fade.show, .popover.fade.show { animation: fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* popover arrow; we will place the arrow inline via JS using ::before */
-.popover::before {
-  content: "";
-  position: absolute;
-  width: 12px; height: 12px;
-  transform: rotate(45deg);
-  background: var(--popover-bg);
-  border-left: 1px solid var(--popover-border);
-  border-top: 1px solid var(--popover-border);
-}
+.tooltip.scale.show, .popover.scale.show { animation: scaleIn 0.25s ease; }
+@keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-/* placement adjustments — JS will set data-placement */
-.popover[data-placement="top"]::before { bottom: -6px; left: calc(50% - 6px); transform: rotate(225deg); }
-.popover[data-placement="bottom"]::before { top: -6px; left: calc(50% - 6px); transform: rotate(45deg); }
-.popover[data-placement="left"]::before { right: -6px; top: calc(50% - 6px); transform: rotate(315deg); }
-.popover[data-placement="right"]::before { left: -6px; top: calc(50% - 6px); transform: rotate(135deg); }
+.tooltip.slide.show, .popover.slide.show { animation: slideIn 0.3s ease; }
+@keyframes slideIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-/* Accessibility focus outline for popover (when focused via JS) */
-.popover:focus { box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+.tooltip.blur.show, .popover.blur.show { animation: blurIn 0.3s ease; filter: blur(0); }
+@keyframes blurIn { from { filter: blur(6px); opacity: 0; } to { filter: blur(0); opacity: 1; } }
 
-/* small responsive */
-@media (max-width:540px) {
-  .tooltip{ font-size:12px; padding:6px 8px; max-width: 260px; }
-  .popover { left:8px !important; right:8px !important; max-width: calc(100% - 16px); }
-}
+.tooltip.elastic.show, .popover.elastic.show { animation: elasticIn 0.4s cubic-bezier(.68,-0.55,.27,1.55); }
+@keyframes elasticIn { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
