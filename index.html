@@ -1,79 +1,60 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Custom Tooltip & Popover — v2</title>
-  <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Custom Tooltip + Popover Effect Viewer</title>
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <main class="container">
-    <h1>Custom Tooltip & Popover — v2</h1>
+  <main>
+    <h1>🎨 Tooltip + Popover Effect Viewer</h1>
+    <p>Hover or click elements below to see all available effects and themes.</p>
 
-    <p>
-      Hover this
-      <button class="btn" data-tooltip="Plain tooltip text">hover me</button>
-      or this (variant)
-      <button class="btn" data-tooltip="Success!" data-tooltip-variant="success">success</button>
-      or try cursor-follow:
-      <button class="btn" data-tooltip="Following cursor" data-tooltip-follow="true">follow</button>
-    </p>
+    <section class="controls">
+      <div>
+        <label>🎞 Effect:</label>
+        <select id="effectSelect">
+          <option value="fade">Fade</option>
+          <option value="scale">Scale</option>
+          <option value="slide">Slide</option>
+          <option value="blur">Blur</option>
+          <option value="elastic">Elastic</option>
+        </select>
+      </div>
 
-    <p>
-      Popover demo:
-      <button id="popoverBtn" class="btn" aria-expanded="false">Open popover</button>
-    </p>
+      <div>
+        <label>🎨 Theme:</label>
+        <select id="themeSelect">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+          <option value="success">Success</option>
+          <option value="error">Error</option>
+          <option value="warning">Warning</option>
+        </select>
+      </div>
 
-    <p>
-      Edge case: open near edge
-      <button class="btn" style="position: absolute; right: 12px; top: 12px;" id="edgeBtn" data-tooltip="Edge tooltip">edge</button>
-    </p>
+      <div>
+        <label>📍 Placement:</label>
+        <select id="placementSelect">
+          <option value="top">Top</option>
+          <option value="bottom">Bottom</option>
+          <option value="left">Left</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="demo-area">
+      <button id="tooltipBtn" class="demo-btn" 
+        data-tooltip="Tooltip Preview">Hover Me</button>
+
+      <button id="popoverBtn" class="demo-btn">
+        Click Me (Popover)
+      </button>
+    </section>
   </main>
 
-  <script type="module">
-    import { TooltipSystem, PopoverSystem } from './js/ui-tooltips.js';
-
-    // Initialize globally with defaults
-    const tooltip = new TooltipSystem({
-      delayShow: 160,
-      delayHide: 120,
-      offset: 10,
-      defaultPlacement: 'top'
-    });
-
-    const popover = new PopoverSystem({
-      offset: 12,
-      defaultPlacement: 'bottom',
-      trapFocus: true
-    });
-
-    // Demo popover content
-    const popBtn = document.getElementById('popoverBtn');
-    popover.attach(popBtn, `
-      <div class="popover__inner" role="document">
-        <h3 class="popover__title">Popover Title</h3>
-        <div class="popover__body">
-          <p>This is an interactive popover. Try keyboard navigation and outside click to close.</p>
-          <input placeholder="Type here" />
-        </div>
-        <div class="popover__footer">
-          <button class="btn" data-pop-action="confirm">Confirm</button>
-          <button class="btn" data-pop-action="cancel">Cancel</button>
-        </div>
-      </div>
-    `);
-
-    // Example: listen for actions inside popover
-    document.addEventListener('click', (e) => {
-      const action = e.target.closest('[data-pop-action]');
-      if (!action) return;
-      if (action.dataset.popAction === 'confirm') alert('Confirmed');
-      if (action.dataset.popAction === 'cancel') popover.hide();
-    });
-
-    // Expose for debugging (optional)
-    window.__tooltip = tooltip;
-    window.__popover = popover;
-  </script>
+  <script src="js/ui-tooltips.js"></script>
 </body>
 </html>
