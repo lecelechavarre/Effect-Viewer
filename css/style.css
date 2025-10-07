@@ -1,0 +1,133 @@
+:root{
+  --bg: #fff;
+  --muted: #6b7280;
+  --card-radius: 10px;
+  --shadow: 0 10px 30px rgba(12, 15, 20, 0.12);
+  --tooltip-bg: rgba(15, 15, 15, 0.88);
+  --tooltip-color: #fff;
+  --popover-bg: #fff;
+  --popover-border: #e6e6e6;
+  --transition-time: 150ms;
+}
+
+*{box-sizing:border-box}
+body {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  margin:0;
+  background: #f6f7fb;
+  color: #0b1220;
+  padding: 40px;
+  min-height:100vh;
+}
+.container { max-width:900px; margin:0 auto; position:relative; }
+
+h1 { margin: 0 0 18px 0; font-size: 20px; }
+
+.btn {
+  display:inline-block;
+  margin: 0 6px 6px 0;
+  padding: 8px 12px;
+  border-radius:8px;
+  border:1px solid #d7d7db;
+  background:#fff;
+  cursor:pointer;
+  font-size:14px;
+}
+
+/* ---------------------------
+   Tooltip
+   --------------------------- */
+.tooltip {
+  position: fixed;
+  z-index: 9999;
+  left:0; top:0;
+  max-width: 320px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-color);
+  font-size: 13px;
+  line-height: 1.25;
+  transform-origin: center;
+  opacity: 0;
+  transform: translateY(4px) scale(.98);
+  transition: opacity var(--transition-time) ease, transform var(--transition-time) ease;
+  pointer-events: none;
+  box-shadow: var(--shadow);
+}
+
+/* variant: success */
+.tooltip[data-variant="success"]{ background:#0f8f4a; color:#fff }
+.tooltip[data-variant="warning"]{ background:#b45309; color:#fff }
+
+/* placement arrow — we'll switch by data-placement */
+.tooltip::after {
+  content: "";
+  position: absolute;
+  width: 10px; height: 10px;
+  transform: rotate(45deg);
+  background: inherit;
+  box-shadow: none;
+}
+
+/* arrow positions, adjusted at runtime by JS to align with trigger */
+.tooltip[data-placement="top"]::after { bottom: -5px; left: calc(50% - 5px); }
+.tooltip[data-placement="bottom"]::after { top: -5px; left: calc(50% - 5px); transform: rotate(225deg); }
+.tooltip[data-placement="left"]::after { right: -5px; top: calc(50% - 5px); transform: rotate(315deg); }
+.tooltip[data-placement="right"]::after { left: -5px; top: calc(50% - 5px); transform: rotate(135deg); }
+
+.tooltip.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* ---------------------------
+   Popover
+   --------------------------- */
+.popover {
+  position: fixed;
+  z-index: 10000;
+  left:0; top:0;
+  min-width: 220px;
+  max-width: 420px;
+  background: var(--popover-bg);
+  border: 1px solid var(--popover-border);
+  border-radius: var(--card-radius);
+  padding: 12px;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(6px) scale(.98);
+  transition: opacity var(--transition-time) ease, transform var(--transition-time) ease;
+  outline: none;
+}
+
+.popover.show { opacity: 1; transform: translateY(0) scale(1); }
+.popover__title { margin: 0 0 8px 0; font-weight:600; font-size:15px; }
+.popover__body { font-size: 14px; color: #222; }
+.popover__footer { margin-top: 12px; display:flex; gap:8px; justify-content: flex-end; }
+
+/* popover arrow; we will place the arrow inline via JS using ::before */
+.popover::before {
+  content: "";
+  position: absolute;
+  width: 12px; height: 12px;
+  transform: rotate(45deg);
+  background: var(--popover-bg);
+  border-left: 1px solid var(--popover-border);
+  border-top: 1px solid var(--popover-border);
+}
+
+/* placement adjustments — JS will set data-placement */
+.popover[data-placement="top"]::before { bottom: -6px; left: calc(50% - 6px); transform: rotate(225deg); }
+.popover[data-placement="bottom"]::before { top: -6px; left: calc(50% - 6px); transform: rotate(45deg); }
+.popover[data-placement="left"]::before { right: -6px; top: calc(50% - 6px); transform: rotate(315deg); }
+.popover[data-placement="right"]::before { left: -6px; top: calc(50% - 6px); transform: rotate(135deg); }
+
+/* Accessibility focus outline for popover (when focused via JS) */
+.popover:focus { box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+
+/* small responsive */
+@media (max-width:540px) {
+  .tooltip{ font-size:12px; padding:6px 8px; max-width: 260px; }
+  .popover { left:8px !important; right:8px !important; max-width: calc(100% - 16px); }
+}
