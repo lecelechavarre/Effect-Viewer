@@ -1,57 +1,40 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Custom Tooltip + Popover Effect Viewer</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart Directional Tooltips + Popovers</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <main>
-    <h1>🎨 Tooltip + Popover Effect Viewer</h1>
-    <p>Hover or click elements below to see all available effects and themes.</p>
+  <main class="page">
+    <h1>Smart Directional Tooltips + Popovers</h1>
+    <p>
+      These examples show directional tooltips (top/bottom/left/right) with automatic flipping and arrow alignment.
+    </p>
 
-    <section class="controls">
-      <div>
-        <label>🎞 Effect:</label>
-        <select id="effectSelect">
-          <option value="fade">Fade</option>
-          <option value="scale">Scale</option>
-          <option value="slide">Slide</option>
-          <option value="blur">Blur</option>
-          <option value="elastic">Elastic</option>
-        </select>
+    <div class="grid">
+      <div class="cell top-row">
+        <button class="demo" data-tooltip="Top tooltip" data-placement="top">Top</button>
       </div>
 
-      <div>
-        <label>🎨 Theme:</label>
-        <select id="themeSelect">
-          <option value="dark">Dark</option>
-          <option value="light">Light</option>
-          <option value="success">Success</option>
-          <option value="error">Error</option>
-          <option value="warning">Warning</option>
-        </select>
+      <div class="cell middle-row">
+        <button class="demo" data-tooltip="Left tooltip" data-placement="left">Left</button>
+        <button class="demo" data-tooltip="Center tooltip (auto)" data-placement="auto">Auto</button>
+        <button class="demo" data-tooltip="Right tooltip" data-placement="right">Right</button>
       </div>
 
-      <div>
-        <label>📍 Placement:</label>
-        <select id="placementSelect">
-          <option value="top">Top</option>
-          <option value="bottom">Bottom</option>
-          <option value="left">Left</option>
-          <option value="right">Right</option>
-        </select>
+      <div class="cell bottom-row">
+        <button class="demo" data-tooltip="Bottom tooltip" data-placement="bottom">Bottom</button>
       </div>
-    </section>
+    </div>
 
-    <section class="demo-area">
-      <button id="tooltipBtn" class="demo-btn" 
-        data-tooltip="Tooltip Preview">Hover Me</button>
-
-      <button id="popoverBtn" class="demo-btn">
-        Click Me (Popover)
-      </button>
+    <section class="more">
+      <h2>Extras</h2>
+      <button id="followBtn" class="demo" data-tooltip="Follow cursor" data-follow="true">Cursor follow</button>
+      <button id="htmlBtn" class="demo" data-tooltip-html="<strong>Bold</strong> <em>HTML</em> inside" data-placement="top">HTML tooltip</button>
+      <button id="interactiveBtn" class="demo" data-tooltip="Interactive tooltip" data-interactive="true">Interactive</button>
+      <button id="popoverBtn" class="demo" data-popover="This is a popover card with an input.<br><input placeholder='Type...'/>" aria-expanded="false">Popover</button>
     </section>
   </main>
 
