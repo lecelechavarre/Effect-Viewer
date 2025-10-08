@@ -123,28 +123,28 @@ function startProgress(node, duration){
 }
 
 /* Show shared (non-interactive) tooltip */
-function showSharedTooltip(target){
-  const text = target.getAttribute('data-tooltip') || '';
-  const html = target.getAttribute('data-tooltip-html') || '';
-  const effect = target.getAttribute('data-effect') || 'fade';
-  const theme = target.getAttribute('data-theme') || target.getAttribute('data-tooltip-theme') || '';
-  const placementPref = target.getAttribute('data-placement') || 'auto';
-  const follow = target.getAttribute('data-follow') === 'true';
-  const delay = parseInt(target.getAttribute('data-delay')||0,10);
-  const duration = parseInt(target.getAttribute('data-duration')||0,10);
-  const showProgress = target.getAttribute('data-progress') === 'true';
+function showSharedTooltip(target, options = {}){
+  const text = options.html ? '' : (target.getAttribute('data-tooltip') || '');
+  const html = options.html || target.getAttribute('data-tooltip-html') || '';
+  const effect = options.effect || target.getAttribute('data-effect') || 'fade';
+  const theme = options.theme || target.getAttribute('data-theme') || target.getAttribute('data-tooltip-theme') || '';
+  const placementPref = options.placement || target.getAttribute('data-placement') || 'auto';
+  const follow = options.follow || target.getAttribute('data-follow') === 'true';
+  const delay = ('delay' in options) ? options.delay : parseInt(target.getAttribute('data-delay')||0,10);
+  const duration = ('duration' in options) ? options.duration : parseInt(target.getAttribute('data-duration')||0,10);
+  const showProgress = options.progress || target.getAttribute('data-progress') === 'true';
 
   if (follow){
     const node = ensureSharedTooltip();
     node.className = `tooltip ${effect} show`;
     node.dataset.theme = theme || '';
     node.dataset.placement = 'bottom';
-    node.innerHTML = target.hasAttribute('data-tooltip-html') ? sanitizeHTML(html) : (text || html);
+    node.innerHTML = options.html ? options.html : (target.hasAttribute('data-tooltip-html') ? sanitizeHTML(html) : (text || html));
     node.style.pointerEvents = 'none';
     node.dataset.follow = 'true';
     window.addEventListener('mousemove', followMouse);
     if (duration) startProgress(node, duration);
-    return;
+    return node;
   }
 
   // respect delay
@@ -153,7 +153,7 @@ function showSharedTooltip(target){
     node.className = `tooltip ${effect} show`;
     node.dataset.theme = theme || '';
     node.dataset.placement = 'top';
-    node.innerHTML = target.hasAttribute('data-tooltip-html') ? html : sanitizeHTML(text || html);
+    node.innerHTML = options.html ? options.html : (target.hasAttribute('data-tooltip-html') ? html : sanitizeHTML(text || html));
     node.style.pointerEvents = 'none';
     node.dataset.follow = 'false';
 
@@ -172,6 +172,7 @@ function showSharedTooltip(target){
   }, delay || DEFAULT.delayShow);
 
   target._tooltipTimer = timer;
+  return null;
 }
 
 /* Hide shared */
@@ -185,7 +186,7 @@ function hideSharedTooltip(target){
 function hideTooltipFor(target){ hideSharedTooltip(target); }
 
 /* Interactive tooltip (dedicated DOM node) */
-function showInteractiveTooltip(target){
+function showInteractiveTooltip(target, options = {}){
   let node = target._interactiveNode;
   if (!node){
     node = document.createElement('div');
@@ -194,14 +195,14 @@ function showInteractiveTooltip(target){
     document.body.appendChild(node);
     target._interactiveNode = node;
   }
-  const html = target.getAttribute('data-tooltip-html') || target.getAttribute('data-tooltip') || '';
-  const effect = target.getAttribute('data-effect') || 'fade';
-  const theme = target.getAttribute('data-theme') || '';
-  const placementPref = target.getAttribute('data-placement') || 'auto';
+  const html = options.html || target.getAttribute('data-tooltip-html') || target.getAttribute('data-tooltip') || '';
+  const effect = options.effect || target.getAttribute('data-effect') || 'fade';
+  const theme = options.theme || target.getAttribute('data-theme') || '';
+  const placementPref = options.placement || target.getAttribute('data-placement') || 'auto';
 
   node.className = `tooltip interactive ${effect} show`;
   node.dataset.theme = theme || '';
-  node.innerHTML = target.hasAttribute('data-tooltip-html') ? html : sanitizeHTML(html);
+  node.innerHTML = options.html ? options.html : (target.hasAttribute('data-tooltip-html') ? html : sanitizeHTML(html));
 
   node.style.left='0px'; node.style.top='0px';
   const refRect = target.getBoundingClientRect();
@@ -315,3 +316,160 @@ document.addEventListener('DOMContentLoaded', () => {
     hideFor: (sel)=>{ const el=document.querySelector(sel); if(el) hideSharedTooltip(el); }
   };
 });
+
+/* -------- Developer API (new) --------
+   TooltipAPI provides programmatic utility functions devs commonly need.
+*/
+window.TooltipAPI = (function(){
+  const attachedMap = new Map();
+
+  function normalizeEl(elOrSelector){
+    if (!elOrSelector) return null;
+    if (typeof elOrSelector === 'string') return document.querySelector(elOrSelector);
+    if (elOrSelector instanceof Element) return elOrSelector;
+    return null;
+  }
+
+  function show(opts = {}){
+    if (opts.x != null && opts.y != null){
+      const node = document.createElement('div');
+      node.className = `tooltip ${opts.effect || 'fade'} show`;
+      if (opts.theme) node.dataset.theme = opts.theme;
+      node.style.position = 'fixed';
+      node.style.left = (opts.x) + 'px';
+      node.style.top = (opts.y) + 'px';
+      node.innerHTML = opts.html ? opts.html : sanitizeHTML(opts.text || '');
+      document.body.appendChild(node);
+      if (opts.duration) setTimeout(()=> { if (node && node.parentNode) node.parentNode.removeChild(node); }, opts.duration);
+      return { node, hide: ()=> { if (node && node.parentNode) node.parentNode.removeChild(node); } };
+    }
+
+    const target = normalizeEl(opts.target);
+    if (!target) {
+      console.warn('TooltipAPI.show: no valid target or coords provided');
+      return null;
+    }
+
+    if (opts.interactive) {
+      showInteractiveTooltip(target, { html: opts.html || opts.text, effect: opts.effect, theme: opts.theme, placement: opts.placement });
+      const node = target._interactiveNode;
+      if (opts.duration) setTimeout(()=> hideInteractiveTooltip(target), opts.duration);
+      return { node, hide: ()=> hideInteractiveTooltip(target) };
+    } else {
+      showSharedTooltip(target, { html: opts.html, effect: opts.effect, theme: opts.theme, placement: opts.placement, follow: opts.follow, delay: opts.delay, duration: opts.duration, progress: opts.progress });
+      const node = ensureSharedTooltip();
+      if (opts.duration) setTimeout(()=> hideSharedTooltip(target), opts.duration);
+      return { node, hide: ()=> hideSharedTooltip(target) };
+    }
+  }
+
+  function hide(handleOrEl){
+    if (!handleOrEl) return;
+    if (handleOrEl.hide && typeof handleOrEl.hide === 'function') {
+      handleOrEl.hide();
+      return;
+    }
+    const el = normalizeEl(handleOrEl);
+    if (el && el._interactiveNode) hideInteractiveTooltip(el);
+    else if (el) hideSharedTooltip(el);
+  }
+
+  function attach(selector, options = {}){
+    if (!selector) return;
+    const handler = (ev) => {
+      const el = ev.currentTarget;
+      const useHtml = options.dataTooltipFromAttr ? (el.hasAttribute('data-tooltip-html') ? el.getAttribute('data-tooltip-html') : null) : options.html;
+      const showOpts = Object.assign({}, {
+        target: el,
+        html: useHtml,
+        effect: options.effect || el.getAttribute('data-effect'),
+        theme: options.theme || el.getAttribute('data-theme'),
+        placement: options.placement || el.getAttribute('data-placement'),
+        follow: options.follow || el.getAttribute('data-follow') === 'true',
+        delay: options.delay
+      });
+      show(showOpts);
+    };
+
+    const elements = Array.from(document.querySelectorAll(selector));
+    elements.forEach(el => {
+      el.addEventListener('mouseenter', handler);
+      el.addEventListener('focusin', handler);
+    });
+    attachedMap.set(selector, { handler, options });
+    return true;
+  }
+
+  function detach(selector){
+    const entry = attachedMap.get(selector);
+    if (!entry) {
+      const nodes = document.querySelectorAll(selector);
+      nodes.forEach(n => {
+        n.removeEventListener('mouseenter', handleShow);
+        n.removeEventListener('focusin', handleShow);
+      });
+      return;
+    }
+    const { handler } = entry;
+    const nodes = document.querySelectorAll(selector);
+    nodes.forEach(n => {
+      n.removeEventListener('mouseenter', handler);
+      n.removeEventListener('focusin', handler);
+    });
+    attachedMap.delete(selector);
+  }
+
+  function copyToClipboard(elementOrSelector, { text = '', duration = 1400, effect = 'pop', theme = 'success' } = {}){
+    const el = normalizeEl(elementOrSelector);
+    if (!el) return;
+    show({ target: el, text, effect, theme, placement: 'top', duration });
+  }
+
+  function showShortcut(elementOrSelector, combo = 'Ctrl+K', opts = {}){
+    const el = normalizeEl(elementOrSelector);
+    if (!el) return;
+    const html = `<span class="tiny">${sanitizeHTML(combo)}</span>`;
+    return show({ target: el, html, effect: opts.effect || 'pop', theme: opts.theme || '', placement: opts.placement || 'top', duration: opts.duration || 2200, interactive: false });
+  }
+
+  function showValidation(elementOrSelector, message = 'Invalid', opts = {}){
+    const el = normalizeEl(elementOrSelector);
+    if (!el) return;
+    const html = sanitizeHTML(message);
+    return show({ target: el, html, effect: opts.effect || 'shake', theme: opts.theme || 'error', placement: opts.placement || 'right', duration: opts.duration || 2400 });
+  }
+
+  function showColorSwatch(elementOrSelector, color = '#FF0000', opts = {}){
+    const el = normalizeEl(elementOrSelector);
+    if (!el) return;
+    const safeColor = sanitizeHTML(color);
+    const html = `<span class="swatch" style="background:${safeColor}"></span><span class="tiny">${safeColor}</span>`;
+    return show({ target: el, html, effect: opts.effect || 'pop', theme: opts.theme || '', placement: opts.placement || 'right', duration: opts.duration || 2400 });
+  }
+
+  function showAt({ x, y, html = '', text = '', effect = 'fade', theme = '', placement = 'auto', duration = 2000 } = {}){
+    if (x == null || y == null) { console.warn('TooltipAPI.showAt requires x and y'); return; }
+    const node = document.createElement('div');
+    node.className = `tooltip ${effect} show`;
+    if (theme) node.dataset.theme = theme;
+    node.style.position = 'fixed';
+    node.style.left = (x) + 'px';
+    node.style.top = (y) + 'px';
+    node.innerHTML = html ? html : sanitizeHTML(text);
+    document.body.appendChild(node);
+    if (duration) setTimeout(()=> { if (node && node.parentNode) node.parentNode.removeChild(node); }, duration);
+    return { node, hide: ()=> { if (node && node.parentNode) node.parentNode.removeChild(node); } };
+  }
+
+  return {
+    show,
+    hide,
+    attach,
+    detach,
+    copyToClipboard,
+    showShortcut,
+    showValidation,
+    showColorSwatch,
+    showAt
+  };
+})();
