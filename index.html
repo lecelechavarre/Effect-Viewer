@@ -3,19 +3,20 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Comprehensive Tooltip Effects — Split Files</title>
+  <title>Comprehensive Tooltip Effects — Developer Tools</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <header class="page-header">
     <div>
-      <h1>Comprehensive Tooltip Effects — Demo</h1>
+      <h1>Comprehensive Tooltip Effects — Developer Tools</h1>
       <div class="label">Hover the items to preview — many variants supported</div>
     </div>
-    <div class="label">Senior Dev — split-file demo</div>
+    <div class="label">Senior Dev — interactive toolkit</div>
   </header>
 
   <main class="grid">
+    <!-- Basic -->
     <div class="card">
       <div class="row" style="margin-bottom:8px"><strong>Basic</strong></div>
       <div class="row">
@@ -26,6 +27,7 @@
       </div>
     </div>
 
+    <!-- More effects -->
     <div class="card">
       <div class="row" style="margin-bottom:8px"><strong>More effects</strong></div>
       <div class="row">
@@ -36,6 +38,7 @@
       </div>
     </div>
 
+    <!-- Themes -->
     <div class="card">
       <div class="row" style="margin-bottom:8px"><strong>Themes</strong></div>
       <div class="row">
@@ -46,6 +49,7 @@
       </div>
     </div>
 
+    <!-- Behavioral -->
     <div class="card">
       <div class="row" style="margin-bottom:8px"><strong>Behavioral</strong></div>
       <div class="row">
@@ -56,6 +60,7 @@
       </div>
     </div>
 
+    <!-- Interactive / HTML -->
     <div class="card">
       <div class="row" style="margin-bottom:8px"><strong>Interactive / HTML</strong></div>
       <div class="row">
@@ -69,6 +74,7 @@
       </div>
     </div>
 
+    <!-- Placement / Smart -->
     <div class="card">
       <div class="row" style="margin-bottom:8px"><strong>Placement / Smart</strong></div>
       <div class="row">
@@ -79,6 +85,7 @@
       </div>
     </div>
 
+    <!-- Advanced -->
     <div class="card">
       <div class="row" style="margin-bottom:8px"><strong>Advanced</strong></div>
       <div class="row">
@@ -88,6 +95,7 @@
       </div>
     </div>
 
+    <!-- Extra effects -->
     <div class="card">
       <div class="row" style="margin-bottom:8px"><strong>Extra effects</strong></div>
       <div class="row">
@@ -108,9 +116,77 @@
       </div>
     </div>
 
+    <!-- Developer utilities -->
+    <div class="card">
+      <div class="row" style="margin-bottom:8px"><strong>Developer Tooling</strong></div>
+      <div class="row">
+        <button id="kbdBtn" class="btn small">Show Shortcut Hint</button>
+        <button id="valBtn" class="btn small">Show Validation (error)</button>
+        <button id="copyBtn" class="btn small" data-copy-text="Hello, clipboard!">Copy text</button>
+        <button id="colorBtn" class="btn small">Color swatch</button>
+        <button id="coordsBtn" class="btn small">Show at coords</button>
+        <button id="attachBtn" class="btn small">Attach dynamic tooltip</button>
+        <button id="detachBtn" class="btn small">Detach dynamic tooltip</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <span class="label">Tip: use <code>TooltipAPI</code> from console (e.g. <code>TooltipAPI.showShortcut('#kbdBtn','Ctrl+K')</code>)</span>
+      </div>
+    </div>
+
   </main>
 
   <!-- JS module -->
   <script type="module" src="js/ui-tooltips.js"></script>
+
+  <script>
+    // Demo wiring for developer tool buttons (uses global TooltipAPI exposed by the module)
+    document.addEventListener('DOMContentLoaded', () => {
+      const kbdBtn = document.getElementById('kbdBtn');
+      const valBtn = document.getElementById('valBtn');
+      const copyBtn = document.getElementById('copyBtn');
+      const colorBtn = document.getElementById('colorBtn');
+      const coordsBtn = document.getElementById('coordsBtn');
+      const attachBtn = document.getElementById('attachBtn');
+      const detachBtn = document.getElementById('detachBtn');
+
+      kbdBtn.addEventListener('click', () => {
+        TooltipAPI.showShortcut(kbdBtn, 'Ctrl + K', { placement: 'bottom', duration: 3000 });
+      });
+
+      valBtn.addEventListener('click', () => {
+        TooltipAPI.showValidation(valBtn, 'This field is required', { placement: 'right', duration: 4000 });
+      });
+
+      copyBtn.addEventListener('click', async () => {
+        const text = copyBtn.dataset.copyText || 'Copied!';
+        try {
+          await navigator.clipboard.writeText(text);
+          TooltipAPI.copyToClipboard(copyBtn, { text: 'Copied!', duration: 1400 });
+        } catch (err) {
+          TooltipAPI.showValidation(copyBtn, 'Clipboard unavailable', { duration: 1600 });
+        }
+      });
+
+      colorBtn.addEventListener('click', () => {
+        TooltipAPI.showColorSwatch(colorBtn, '#FF6B6B', { placement: 'top', duration: 2800 });
+      });
+
+      coordsBtn.addEventListener('click', (ev) => {
+        const rect = coordsBtn.getBoundingClientRect();
+        TooltipAPI.showAt({ x: rect.right + 80, y: rect.top + 40, html: 'Virtual tooltip at coords', effect: 'pop', duration: 2500, theme: 'pastel' });
+      });
+
+      let attached = false;
+      attachBtn.addEventListener('click', () => {
+        if (attached) return;
+        TooltipAPI.attach('.btn.small', { effect: 'scale', placement: 'top', delay: 190, dataTooltipFromAttr: true });
+        attached = true;
+      });
+      detachBtn.addEventListener('click', () => {
+        TooltipAPI.detach('.btn.small');
+        attached = false;
+      });
+    });
+  </script>
 </body>
 </html>
