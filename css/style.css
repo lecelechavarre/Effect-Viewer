@@ -1,95 +1,125 @@
+/* -------------------------
+   Base layout & utilities
+   ------------------------- */
 :root{
-  --bg: #f7fafc;
-  --muted: #6b7280;
-  --card: #fff;
-  --accent: #0b84ff;
-  --tooltip-bg: rgba(17,24,39,0.92);
-  --tooltip-color: #fff;
-  --popover-bg: #fff;
-  --radius: 8px;
-  --shadow: 0 10px 30px rgba(2,6,23,0.12);
-  --anim: 160ms cubic-bezier(.2,.9,.2,1);
+  --bg: #0f1724;
+  --muted: #94a3b8;
+  --gap: 12px;
+  --radius: 10px;
+  --shadow-1: 0 6px 30px rgba(2,6,23,0.6);
 }
-
 *{box-sizing:border-box}
-body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); color:#0b1220; margin:0; padding:36px;}
-.page{max-width:980px;margin:0 auto;}
-h1{margin:0 0 18px 0;font-size:20px}
-.grid{display:flex;flex-direction:column;gap:18px;align-items:center;margin:28px 0}
-.cell{display:flex;gap:14px;align-items:center;justify-content:center}
-.demo{padding:10px 14px;border-radius:10px;border:1px solid #e6edf6;background:linear-gradient(180deg,#fff,#f7fbff);cursor:pointer;font-weight:600}
-.demo:focus{outline:3px solid rgba(11,132,255,0.14)}
-.more{margin-top:32px}
+body{
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  margin:0; min-height:100vh; background: linear-gradient(180deg,#0b1220 0%, #071024 60%);
+  color:#e6eef8; padding:32px;
+}
+.page-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+h1{margin:0 0 4px 0;font-size:20px}
+.label{font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01)); padding:14px;border-radius:12px;box-shadow:var(--shadow-1); border:1px solid rgba(255,255,255,0.02)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{padding:8px 12px;border-radius:8px;border:none;background:#0ea5a4;color:#021;cursor:pointer;font-weight:600}
+.small{padding:6px 8px;font-size:13px}
 
-/* Tooltip base */
+/* -------------------------
+   Tooltip base
+   ------------------------- */
 .tooltip {
   position: fixed;
-  z-index: 2000;
+  z-index: 99999;
   left:0; top:0;
-  display:block;
-  max-width:320px;
-  padding:8px 10px;
-  border-radius:8px;
-  background:var(--tooltip-bg);
-  color:var(--tooltip-color);
-  font-size:13px;
-  line-height:1.3;
-  box-shadow:var(--shadow);
+  pointer-events: none;
+  opacity: 0;
   transform-origin: center;
-  opacity:0;
+  transition: opacity 180ms ease, transform 180ms ease;
+  max-width: 360px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.25;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.95);
+  box-shadow: 0 10px 30px rgba(2,6,23,0.6);
   transform: translateY(6px) scale(.98);
-  transition: opacity var(--anim), transform var(--anim);
-  pointer-events: auto;
 }
+.tooltip.show{ opacity:1; transform: translateY(0) scale(1); }
 
-/* visible */
-.tooltip.show {
-  opacity:1;
-  transform: translateY(0) scale(1);
-}
-
-/* Arrow: placed via pseudo-element. We center by default, but JS sets --arrow-left / --arrow-top for fine alignment */
+/* arrow */
 .tooltip::after{
-  content: "";
-  position: absolute;
-  width: 10px; height: 10px;
-  background: inherit;
-  transform: rotate(45deg);
-  box-shadow: inherit;
-  box-shadow: 0 6px 18px rgba(2,6,23,0.08);
+  content:"";
+  position:absolute;
+  width:10px;height:10px;
+  background:inherit;
+  transform:rotate(45deg);
+  left: var(--arrow-left, 50%);
+  top: var(--arrow-top, auto);
+  bottom: var(--arrow-bottom, -5px);
+  right: var(--arrow-right, auto);
+  box-shadow: -1px -1px 0 rgba(0,0,0,0.08);
 }
 
-/* placement helpers (arrow default positions) */
-.tooltip[data-placement^="top"]::after    { bottom: -5px; left: var(--arrow-left, 50%); transform: translateX(-50%) rotate(45deg); }
-.tooltip[data-placement^="bottom"]::after { top: -5px; left: var(--arrow-left, 50%); transform: translateX(-50%) rotate(45deg); }
-.tooltip[data-placement^="left"]::after   { right: -5px; top: var(--arrow-top, 50%); transform: translateY(-50%) rotate(45deg); }
-.tooltip[data-placement^="right"]::after  { left: -5px; top: var(--arrow-top, 50%); transform: translateY(-50%) rotate(45deg); }
+/* placement flags */
+.tooltip[data-placement="top"]{ transform-origin: 50% 100%; }
+.tooltip[data-placement="bottom"]{ transform-origin: 50% 0%; }
+.tooltip[data-placement="left"]{ transform-origin: 100% 50%; }
+.tooltip[data-placement="right"]{ transform-origin: 0% 50%; }
 
-/* small popover styling */
-.popover {
-  position: fixed;
-  z-index:2100;
-  left:0; top:0;
-  min-width:220px;
-  max-width:420px;
-  background:var(--popover-bg);
-  color:#0b1220;
-  padding:12px;
-  border-radius:10px;
-  border:1px solid #e6edf6;
-  box-shadow: var(--shadow);
-  opacity:0; transform: translateY(6px); transition: opacity var(--anim), transform var(--anim);
-}
-.popover.show{opacity:1; transform: translateY(0)}
-.popover input{width:100%;padding:8px;border-radius:6px;border:1px solid #e6edf6}
+/* -------------------------
+   Themes
+   ------------------------- */
+.tooltip[data-theme="light"]{ background: #fff; color:#111; box-shadow: 0 8px 24px rgba(2,6,23,0.08); }
+.tooltip[data-theme="success"]{ background: linear-gradient(180deg,#0ea5a4,#059669); color:#fff; }
+.tooltip[data-theme="warning"]{ background:#f59e0b; color:#081018; }
+.tooltip[data-theme="error"]{ background:#ef4444; color:white; }
+.tooltip[data-theme="pastel"]{ background: linear-gradient(135deg,#fdf6ff,#e6f7ff); color:#062030; }
+.tooltip[data-theme="neon"]{ background: linear-gradient(90deg,#0ff,#7f0,#f0f); color:#001; box-shadow: 0 0 24px rgba(0,255,200,0.12); }
 
-/* Themes (variants) */
-.tooltip[data-variant="success"]{background:#16a34a}
-.tooltip[data-variant="danger"]{background:#ef4444}
-.tooltip[data-variant="info"]{background:#0ea5e9;color:#012}
+/* -------------------------
+   Interactive tooltips
+   ------------------------- */
+.tooltip.interactive { pointer-events: auto; }
+.tooltip.interactive :focus { outline: 2px solid rgba(99,102,241,0.18); border-radius:6px; }
+
+/* -------------------------
+   Helpful inner helpers
+   ------------------------- */
+.tooltip .t-row{ display:flex; gap:8px; align-items:center; }
+.tooltip .t-icon{ width:20px;height:20px;border-radius:4px;flex:0 0 20px; display:inline-flex;align-items:center;justify-content:center;font-weight:700 }
+.tooltip .t-img{ width:120px; height:70px; object-fit:cover; border-radius:6px; display:block }
+.tooltip pre{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace; font-size:12px; margin:6px 0; background:rgba(0,0,0,0.12); padding:8px;border-radius:6px; overflow:auto; max-width:340px }
+.tooltip .progress { height:6px; background: rgba(255,255,255,0.12); border-radius: 6px; overflow:hidden; margin-top:8px }
+.tooltip .progress > b { display:block; height:100%; width:0%; background: linear-gradient(90deg,#06b6d4,#4ade80); transition: width linear }
+
+/* -------------------------
+   Animation effect classes
+   ------------------------- */
+.tooltip.fade.show { transition: opacity 220ms ease; }
+.tooltip.scale.show { transform-origin:center; transition: transform 220ms cubic-bezier(.2,.9,.2,1), opacity 200ms; transform: scale(1.02) }
+.tooltip.slide-up.show { transform: translateY(0); transition: transform 220ms cubic-bezier(.2,.9,.2,1), opacity 180ms; }
+.tooltip.slide-down { transform: translateY(-6px); }
+.tooltip.blur.show { filter: blur(0); opacity:1; transition: filter 280ms, opacity 200ms }
+.tooltip.blur { filter: blur(6px) }
+.tooltip.elastic.show { animation: elasticIn 420ms cubic-bezier(.22,1.2,.36,1) }
+@keyframes elasticIn { 0% { transform: scale(.7); opacity:0 } 60% { transform: scale(1.06); opacity:1 } 100% { transform: scale(1) } }
+.tooltip.bounce.show { animation: bounceIn 420ms ease }
+@keyframes bounceIn { 0%{transform: translateY(20px);opacity:0}60%{transform: translateY(-8px);opacity:1}80%{transform: translateY(4px)}100%{transform:translateY(0)}}
+.tooltip.rotate.show { transform: rotateX(0deg) scale(1); transition: transform 300ms; }
+.tooltip.rotate { transform: rotateX(15deg) scale(.98) }
+.tooltip.flip.show { animation: flipIn 360ms cubic-bezier(.2,.9,.2,1) }
+@keyframes flipIn { from { transform: rotateY(90deg); opacity:0 } to { transform: rotateY(0deg); opacity:1 } }
+.tooltip.pulse.show { animation: pulse 900ms infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0,0,0,0.10) } 70% { box-shadow: 0 0 0 12px rgba(0,0,0,0) } 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0) } }
+
+/* glass style */
+.tooltip.glass { background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)); backdrop-filter: blur(6px); color:#e6eef8; border:1px solid rgba(255,255,255,0.04) }
+
+/* neon glow style */
+.tooltip.neon { box-shadow: 0 6px 24px rgba(0,255,200,0.08), 0 0 36px rgba(0,255,200,0.04) }
 
 /* responsive */
 @media (max-width:640px){
-  .tooltip{font-size:12px}
-  .grid{gap:12px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+  .tooltip { max-width: 260px; font-size:12px }
 }
