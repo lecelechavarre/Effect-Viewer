@@ -3,41 +3,94 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Smart Directional Tooltips + Popovers</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <title>Comprehensive Tooltip Effects — Split Files</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <main class="page">
-    <h1>Smart Directional Tooltips + Popovers</h1>
-    <p>
-      These examples show directional tooltips (top/bottom/left/right) with automatic flipping and arrow alignment.
-    </p>
+  <header class="page-header">
+    <div>
+      <h1>Comprehensive Tooltip Effects — Demo</h1>
+      <div class="label">Hover the items to preview — many variants supported</div>
+    </div>
+    <div class="label">Senior Dev — split-file demo</div>
+  </header>
 
-    <div class="grid">
-      <div class="cell top-row">
-        <button class="demo" data-tooltip="Top tooltip" data-placement="top">Top</button>
-      </div>
-
-      <div class="cell middle-row">
-        <button class="demo" data-tooltip="Left tooltip" data-placement="left">Left</button>
-        <button class="demo" data-tooltip="Center tooltip (auto)" data-placement="auto">Auto</button>
-        <button class="demo" data-tooltip="Right tooltip" data-placement="right">Right</button>
-      </div>
-
-      <div class="cell bottom-row">
-        <button class="demo" data-tooltip="Bottom tooltip" data-placement="bottom">Bottom</button>
+  <main class="grid">
+    <div class="card">
+      <div class="row" style="margin-bottom:8px"><strong>Basic</strong></div>
+      <div class="row">
+        <button class="btn small" data-tooltip="Simple fade tooltip" data-effect="fade">Fade</button>
+        <button class="btn small" data-tooltip="Scale tooltip" data-effect="scale">Scale</button>
+        <button class="btn small" data-tooltip="Slide up" data-effect="slide-up">Slide Up</button>
+        <button class="btn small" data-tooltip="Slide down" data-effect="slide-down">Slide Down</button>
       </div>
     </div>
 
-    <section class="more">
-      <h2>Extras</h2>
-      <button id="followBtn" class="demo" data-tooltip="Follow cursor" data-follow="true">Cursor follow</button>
-      <button id="htmlBtn" class="demo" data-tooltip-html="<strong>Bold</strong> <em>HTML</em> inside" data-placement="top">HTML tooltip</button>
-      <button id="interactiveBtn" class="demo" data-tooltip="Interactive tooltip" data-interactive="true">Interactive</button>
-      <button id="popoverBtn" class="demo" data-popover="This is a popover card with an input.<br><input placeholder='Type...'/>" aria-expanded="false">Popover</button>
-    </section>
+    <div class="card">
+      <div class="row" style="margin-bottom:8px"><strong>More effects</strong></div>
+      <div class="row">
+        <button class="btn small" data-tooltip="Blur effect" data-effect="blur">Blur</button>
+        <button class="btn small" data-tooltip="Elastic pop" data-effect="elastic">Elastic</button>
+        <button class="btn small" data-tooltip="Bounce" data-effect="bounce">Bounce</button>
+        <button class="btn small" data-tooltip="Rotate 3D" data-effect="rotate">Rotate</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="margin-bottom:8px"><strong>Themes</strong></div>
+      <div class="row">
+        <button class="btn small" data-tooltip="Neon theme" data-theme="neon" data-effect="scale">Neon</button>
+        <button class="btn small" data-tooltip="Light theme" data-theme="light" data-effect="fade">Light</button>
+        <button class="btn small" data-tooltip="Success theme" data-theme="success">Success</button>
+        <button class="btn small" data-tooltip="Warning theme" data-theme="warning">Warning</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="margin-bottom:8px"><strong>Behavioral</strong></div>
+      <div class="row">
+        <button class="btn small" data-tooltip="I follow your cursor" data-effect="scale" data-follow="true">Follow cursor</button>
+        <button class="btn small" data-tooltip="I persist until click" data-effect="fade" data-sticky="true">Sticky (persistent)</button>
+        <button class="btn small" data-tooltip="I appear after delay" data-effect="fade" data-delay="600">Delayed (600ms)</button>
+        <button class="btn small" data-tooltip="Short life (3s) with progress" data-effect="fade" data-duration="3000" data-progress="true">Timed (3s)</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="margin-bottom:8px"><strong>Interactive / HTML</strong></div>
+      <div class="row">
+        <button class="btn small" data-tooltip-html="<strong>Bold</strong><br/><em>HTML content</em>" data-effect="scale" data-interactive="true">HTML content</button>
+
+        <button class="btn small" data-tooltip-html="<div class='t-row'><span class='t-icon'>💡</span><div><strong>Tip</strong><div class='label' style='color:inherit;opacity:.9'>An icon + text</div></div></div>" data-interactive="true">Icon + HTML</button>
+
+        <button class="btn small" data-tooltip-html="<img class='t-img' src='https://picsum.photos/300/140?random=3' alt='sample'/>" data-interactive="true">Image</button>
+
+        <button class="btn small" data-tooltip-html='<pre>const x = 42;\nconsole.log(x)</pre>' data-interactive="true" data-effect="scale">Code</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="margin-bottom:8px"><strong>Placement / Smart</strong></div>
+      <div class="row">
+        <button class="btn small" style="margin-left:auto" data-tooltip="Auto placed near edges" data-placement="auto">Auto placement</button>
+        <button class="btn small" data-tooltip="I prefer top" data-placement="top">Prefer top</button>
+        <button class="btn small" data-tooltip="I prefer bottom" data-placement="bottom">Prefer bottom</button>
+        <button class="btn small" data-tooltip="I prefer left" data-placement="left">Prefer left</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="margin-bottom:8px"><strong>Advanced</strong></div>
+      <div class="row">
+        <button class="btn small" data-tooltip="Animated arrow" data-animate-arrow="true">Animated arrow</button>
+        <button class="btn small" data-tooltip="Stacked tooltips" data-effect="fade" id="stackBtn">Stacked</button>
+        <button class="btn small" data-tooltip="Auto hide unless hovered" data-sticky="once" data-duration="4000">Once (auto-hide)</button>
+      </div>
+    </div>
+
   </main>
 
-  <script src="js/ui-tooltips.js"></script>
+  <!-- JS module -->
+  <script type="module" src="js/ui-tooltips.js"></script>
 </body>
 </html>
