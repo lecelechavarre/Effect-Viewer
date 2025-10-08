@@ -1,6 +1,3 @@
-/* -------------------------
-   Base layout & utilities
-   ------------------------- */
 :root{
   --bg: #0f1724;
   --muted: #94a3b8;
@@ -93,7 +90,7 @@ h1{margin:0 0 4px 0;font-size:20px}
 .tooltip .progress > b { display:block; height:100%; width:0%; background: linear-gradient(90deg,#06b6d4,#4ade80); transition: width linear }
 
 /* -------------------------
-   Animation effect classes
+   Animation effect classes (core)
    ------------------------- */
 .tooltip.fade.show { transition: opacity 220ms ease; }
 .tooltip.scale.show { transform-origin:center; transition: transform 220ms cubic-bezier(.2,.9,.2,1), opacity 200ms; transform: scale(1.02) }
@@ -101,7 +98,7 @@ h1{margin:0 0 4px 0;font-size:20px}
 .tooltip.slide-down { transform: translateY(-6px); }
 .tooltip.blur.show { filter: blur(0); opacity:1; transition: filter 280ms, opacity 200ms }
 .tooltip.blur { filter: blur(6px) }
-.tooltip.elastic.show { animation: elasticIn 420ms cubic-bezier(.22,1.2,.36,1) }
+.tooltip.elastic.show { animation: elasticIn 420ms cubic-bezier(.22,1,.36,1) }
 @keyframes elasticIn { 0% { transform: scale(.7); opacity:0 } 60% { transform: scale(1.06); opacity:1 } 100% { transform: scale(1) } }
 .tooltip.bounce.show { animation: bounceIn 420ms ease }
 @keyframes bounceIn { 0%{transform: translateY(20px);opacity:0}60%{transform: translateY(-8px);opacity:1}80%{transform: translateY(4px)}100%{transform:translateY(0)}}
@@ -117,6 +114,100 @@ h1{margin:0 0 4px 0;font-size:20px}
 
 /* neon glow style */
 .tooltip.neon { box-shadow: 0 6px 24px rgba(0,255,200,0.08), 0 0 36px rgba(0,255,200,0.04) }
+
+/* ----------------------------
+   EXTRA EFFECTS
+   ---------------------------- */
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .tooltip, .tooltip * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Wobble */
+@keyframes wobble { 0%{transform:translateX(0)}15%{transform:translateX(-8px) rotate(-1deg)}30%{transform:translateX(6px) rotate(1deg)}45%{transform:translateX(-4px) rotate(-1deg)}60%{transform:translateX(2px) rotate(.5deg)}100%{transform:translateX(0)} }
+.tooltip.wobble.show { animation: wobble 560ms cubic-bezier(.68,-0.6,.32,1.6); }
+
+/* Swing */
+@keyframes swingIn { 0%{transform:rotateX(0) translateY(8px);opacity:0}60%{transform:rotateX(-12deg) translateY(-4px);opacity:1}100%{transform:rotateX(0) translateY(0);opacity:1} }
+.tooltip.swing.show { animation: swingIn 420ms ease; transform-origin: top center; }
+
+/* Rubber band */
+@keyframes rubberBand { 0%{transform:scaleX(1)}30%{transform:scaleX(1.25)}40%{transform:scaleX(0.85)}55%{transform:scaleX(1.05)}65%{transform:scaleX(0.95)}100%{transform:scaleX(1)} }
+.tooltip.rubber.show { animation: rubberBand 420ms cubic-bezier(.2,1,.3,1); }
+
+/* Tada */
+@keyframes tada { 0%{transform:scale(1)}10%,20%{transform:scale(.9) rotate(-3deg)}30%,50%,70%,90%{transform:scale(1.1) rotate(3deg)}40%,60%,80%{transform:scale(1.1) rotate(-3deg)}100%{transform:scale(1) rotate(0)} }
+.tooltip.tada.show { animation: tada 900ms ease; }
+
+/* LightSpeed */
+@keyframes lightSpeedIn { 0%{transform:translateX(100%) skewX(-30deg);opacity:0}60%{transform:translateX(-10%) skewX(20deg);opacity:1}100%{transform:translateX(0) skewX(0);opacity:1} }
+.tooltip.lightSpeed.show { animation: lightSpeedIn 420ms ease-out; }
+
+/* Roll In */
+@keyframes rollIn { 0%{transform:translateX(-100%) rotate(-120deg);opacity:0}100%{transform:translateX(0) rotate(0);opacity:1} }
+.tooltip.rollIn.show { animation: rollIn 480ms cubic-bezier(.2,.9,.2,1); }
+
+/* Slide left / right */
+@keyframes slideLeftIn { from{transform:translateX(-12px);opacity:0} to{transform:translateX(0);opacity:1} }
+@keyframes slideRightIn { from{transform:translateX(12px);opacity:0} to{transform:translateX(0);opacity:1} }
+.tooltip.slide-left.show { animation: slideLeftIn 280ms cubic-bezier(.2,.9,.2,1); }
+.tooltip.slide-right.show { animation: slideRightIn 280ms cubic-bezier(.2,.9,.2,1); }
+
+/* Float */
+@keyframes floaty { 0%{transform:translateY(0)}50%{transform:translateY(-6px)}100%{transform:translateY(0)} }
+.tooltip.float.show { animation: floaty 2200ms ease-in-out infinite; }
+
+/* Jelly */
+@keyframes jelly { 0%{transform:scale(1)}30%{transform:scale(1.15,0.85)}45%{transform:scale(0.9,1.05)}60%{transform:scale(1.05,0.95)}100%{transform:scale(1)} }
+.tooltip.jelly.show { animation: jelly 520ms cubic-bezier(.2,.9,.2,1); }
+
+/* FlipX / FlipY */
+@keyframes flipXIn { from{transform:rotateX(90deg);opacity:0} to{transform:rotateX(0);opacity:1} }
+@keyframes flipYIn { from{transform:rotateY(90deg);opacity:0} to{transform:rotateY(0);opacity:1} }
+.tooltip.flipX.show { animation: flipXIn 360ms cubic-bezier(.2,.9,.2,1); transform-origin: center top; }
+.tooltip.flipY.show { animation: flipYIn 360ms cubic-bezier(.2,.9,.2,1); transform-origin: left center; }
+
+/* Shimmer */
+.tooltip.shimmer { position: relative; overflow: hidden; }
+.tooltip.shimmer::before {
+  content:""; position:absolute; left:-60%; top:0; width:60%; height:100%;
+  background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.12), rgba(255,255,255,0.02));
+  transform: skewX(-20deg); pointer-events:none;
+}
+.tooltip.shimmer.show::before { animation: shimmerMove 1.1s linear forwards; }
+@keyframes shimmerMove { from{left:-60%} to{left:160%} }
+
+/* Pop (shiny) */
+@keyframes popGlow { 0%{transform:scale(.92);box-shadow:none;opacity:0}40%{transform:scale(1.02);box-shadow:0 6px 20px rgba(255,255,255,.06);opacity:1}100%{transform:scale(1);} }
+.tooltip.pop.show { animation: popGlow 260ms cubic-bezier(.2,.9,.2,1); }
+
+/* Skew */
+@keyframes skewIn { from{transform:skewX(-12deg) translateY(6px);opacity:0} to{transform:skewX(0) translateY(0);opacity:1} }
+.tooltip.skew.show { animation: skewIn 320ms ease; }
+
+/* Ripple */
+.tooltip.ripple { position: relative; overflow: visible; }
+.tooltip.ripple::before { content:""; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:10px;height:10px;border-radius:50%; background: rgba(255,255,255,0.06); opacity:0; }
+.tooltip.ripple.show::before { animation: ripplePulse 880ms ease-out forwards; }
+@keyframes ripplePulse { 0%{transform:translate(-50%,-50%) scale(.6);opacity:.9}70%{transform:translate(-50%,-50%) scale(2.8);opacity:.15}100%{transform:translate(-50%,-50%) scale(3.2);opacity:0} }
+
+/* Wavy text */
+.tooltip .wavy { display:inline-block; transform-origin:center; animation: wavy 1200ms linear infinite; }
+@keyframes wavy { 0%{transform:translateY(0)}50%{transform:translateY(-4px)}100%{transform:translateY(0)} }
+
+/* Bounce variants */
+@keyframes bounceInLeft { 0%{transform:translateX(-120px);opacity:0}60%{transform:translateX(8px);opacity:1}80%{transform:translateX(-4px)}100%{transform:translateX(0)} }
+@keyframes bounceInRight{ 0%{transform:translateX(120px);opacity:0}60%{transform:translateX(-8px);opacity:1}80%{transform:translateX(4px)}100%{transform:translateX(0)} }
+.tooltip.bounceInLeft.show { animation: bounceInLeft 520ms cubic-bezier(.2,.9,.2,1); }
+.tooltip.bounceInRight.show { animation: bounceInRight 520ms cubic-bezier(.2,.9,.2,1); }
+
+/* Rotate 3D */
+@keyframes rotate3dIn { 0%{transform:perspective(600px) rotate3d(1,1,0,60deg) translateZ(-40px);opacity:0}100%{transform:perspective(600px) rotate3d(0,0,0,0) translateZ(0);opacity:1} }
+.tooltip.rotate3d.show { animation: rotate3dIn 520ms cubic-bezier(.22,1,.36,1); }
 
 /* responsive */
 @media (max-width:640px){
