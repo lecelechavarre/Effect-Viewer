@@ -1,316 +1,317 @@
-(function () {
-  // Utility helpers
-  const rafThrottle = (fn) => {
-    let raf = null;
-    return (...args) => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => { fn(...args); raf = null; });
-    };
-  };
+const DEFAULT = {
+  delayShow: 160,
+  delayHide: 120,
+  offset: 10,
+};
 
-  const getViewport = () => ({ width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const $$ = (s, ctx = document) => Array.from(ctx.querySelectorAll(s));
 
-  const sanitize = (html) => {
-    // Basic, safe-ish sanitizer for this demo (escapes text). Replace with DOMPurify for production when allowing rich HTML.
-    const d = document.createElement('div'); d.textContent = html; return d.innerHTML;
-  };
+function sanitizeHTML(str) {
+  const tmp = document.createElement('div');
+  tmp.textContent = str;
+  return tmp.innerHTML;
+}
 
-  function computePosition(refRect, popRect, preferred = 'top', offset = 8) {
-    const viewport = getViewport();
-    const oppositeMap = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' };
-    const placements = (() => {
-      if (preferred === 'auto') return ['top','bottom','right','left'];
-      const opposite = oppositeMap[preferred] || 'bottom';
-      return [preferred, opposite, ...['top','bottom','right','left'].filter(p => p !== preferred && p !== opposite)];
-    })();
+/* Single shared tooltip node for non-interactive tooltips */
+let sharedTooltip = null;
+function ensureSharedTooltip(){
+  if (sharedTooltip && document.body.contains(sharedTooltip)) return sharedTooltip;
+  sharedTooltip = document.createElement('div');
+  sharedTooltip.className = 'tooltip';
+  sharedTooltip.setAttribute('role','tooltip');
+  sharedTooltip.style.position = 'fixed';
+  sharedTooltip.style.left = '0px';
+  sharedTooltip.style.top = '0px';
+  sharedTooltip.dataset.placement = 'top';
+  document.body.appendChild(sharedTooltip);
+  return sharedTooltip;
+}
 
-    const pad = 6;
-    const fits = (x,y,w,h) => x >= 0 && y >= 0 && x + w <= viewport.width && y + h <= viewport.height;
+/* compute best position (smart placement) */
+function computePosition(refRect, popRect, preferred = 'auto', offset = DEFAULT.offset){
+  const vw = document.documentElement.clientWidth;
+  const vh = document.documentElement.clientHeight;
+  const pads = 6;
 
-    for (const p of placements) {
-      let left, top;
-      if (p === 'top') {
-        left = refRect.left + (refRect.width - popRect.width) / 2;
-        top = refRect.top - popRect.height - offset;
-      } else if (p === 'bottom') {
-        left = refRect.left + (refRect.width - popRect.width) / 2;
-        top = refRect.bottom + offset;
-      } else if (p === 'left') {
-        left = refRect.left - popRect.width - offset;
-        top = refRect.top + (refRect.height - popRect.height) / 2;
-      } else { // right
-        left = refRect.right + offset;
-        top = refRect.top + (refRect.height - popRect.height) / 2;
-      }
+  const placements = (pref => {
+    if (!pref || pref === 'auto') return ['top','bottom','right','left'];
+    const opposite = { top:'bottom', bottom:'top', left:'right', right:'left' }[pref];
+    const others = ['top','bottom','right','left'].filter(p => p !== pref && p !== opposite);
+    return [pref, opposite, ...others];
+  })(preferred);
 
-      // Shift along cross axis
-      left = Math.min(Math.max(left, pad), Math.max(viewport.width - popRect.width - pad, pad));
-      top  = Math.min(Math.max(top, pad), Math.max(viewport.height - popRect.height - pad, pad));
-
-      if (fits(left, top, popRect.width, popRect.height)) return { left, top, placement: p };
+  for (const p of placements){
+    let left, top;
+    if (p === 'top'){
+      left = refRect.left + (refRect.width - popRect.width)/2;
+      top = refRect.top - popRect.height - offset;
+    } else if (p === 'bottom'){
+      left = refRect.left + (refRect.width - popRect.width)/2;
+      top = refRect.bottom + offset;
+    } else if (p === 'left'){
+      left = refRect.left - popRect.width - offset;
+      top = refRect.top + (refRect.height - popRect.height)/2;
+    } else { // right
+      left = refRect.right + offset;
+      top = refRect.top + (refRect.height - popRect.height)/2;
     }
 
-    // fallback center
-    return { left: Math.max((viewport.width - popRect.width) / 2, pad), top: Math.max((viewport.height - popRect.height) / 2, pad), placement: placements[0] };
+    left = clamp(left, pads, Math.max(vw - popRect.width - pads, pads));
+    top  = clamp(top, pads, Math.max(vh - popRect.height - pads, pads));
+
+    if (left >= 0 && top >= 0 && left + popRect.width <= vw && top + popRect.height <= vh) {
+      return { left, top, placement: p };
+    }
   }
 
-  // TooltipSystem
-  class TooltipSystem {
-    constructor() {
-      this.tooltip = null;
-      this.active = null; // { target, follow, interactive }
-      this.showTimer = null;
-      this.hideTimer = null;
-      this.offset = 8;
-      this._reposition = rafThrottle(this._reposition.bind(this));
-      this._onMove = this._onMove.bind(this);
+  // fallback center
+  return { left: Math.max((vw - popRect.width)/2, 6), top: Math.max((vh - popRect.height)/2, 6), placement: placements[0] };
+}
 
-      this._initListeners();
+/* set --arrow-left / --arrow-top CSS variables using absolute coords */
+function setArrowPosition(tooltipEl, refRect, popRect, placement){
+  tooltipEl.style.removeProperty('--arrow-left');
+  tooltipEl.style.removeProperty('--arrow-top');
+  tooltipEl.style.removeProperty('--arrow-bottom');
+  tooltipEl.style.removeProperty('--arrow-right');
+
+  if (placement === 'top' || placement === 'bottom'){
+    let leftOffset = (refRect.left + refRect.width/2) - popRect.left;
+    leftOffset = clamp(leftOffset - 5, 8, popRect.width - 18);
+    tooltipEl.style.setProperty('--arrow-left', leftOffset + 'px');
+    if (placement === 'top') { tooltipEl.style.setProperty('--arrow-bottom','-5px'); tooltipEl.style.setProperty('--arrow-top','auto'); }
+    else { tooltipEl.style.setProperty('--arrow-top','-5px'); tooltipEl.style.setProperty('--arrow-bottom','auto'); }
+  } else {
+    let topOffset = (refRect.top + refRect.height/2) - popRect.top;
+    topOffset = clamp(topOffset - 5, 8, popRect.height - 18);
+    tooltipEl.style.setProperty('--arrow-top', topOffset + 'px');
+    if (placement === 'left'){ tooltipEl.style.setProperty('--arrow-right','-5px'); tooltipEl.style.setProperty('--arrow-left','auto'); }
+    else { tooltipEl.style.setProperty('--arrow-left','-5px'); tooltipEl.style.setProperty('--arrow-right','auto'); }
+  }
+}
+
+/* follow cursor mouse handler */
+function followMouse(e){
+  const node = ensureSharedTooltip();
+  if (!node || node.dataset.follow !== 'true') return;
+  const offset = DEFAULT.offset;
+  const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+  const nx = clamp(e.clientX + offset, 8, vw - node.offsetWidth - 8);
+  const ny = clamp(e.clientY + offset, 8, vh - node.offsetHeight - 8);
+  node.style.left = nx + 'px';
+  node.style.top  = ny + 'px';
+  node.dataset.placement = 'bottom';
+}
+
+/* progress bar helper */
+function startProgress(node, duration){
+  let pr = node.querySelector('.progress');
+  if (!pr){
+    pr = document.createElement('div'); pr.className = 'progress';
+    const bar = document.createElement('b'); bar.style.width='0%'; pr.appendChild(bar); node.appendChild(pr);
+  }
+  const bar = pr.querySelector('b');
+  const start = performance.now();
+  if (node._progressTimer) clearInterval(node._progressTimer);
+  node._progressTimer = setInterval(()=>{
+    const now = performance.now();
+    const pct = clamp(((now - start)/duration)*100, 0, 100);
+    bar.style.width = pct + '%';
+    if (pct >= 100){ clearInterval(node._progressTimer); node._progressTimer=null; node.classList.remove('show'); }
+  }, 30);
+}
+
+/* Show shared (non-interactive) tooltip */
+function showSharedTooltip(target){
+  const text = target.getAttribute('data-tooltip') || '';
+  const html = target.getAttribute('data-tooltip-html') || '';
+  const effect = target.getAttribute('data-effect') || 'fade';
+  const theme = target.getAttribute('data-theme') || target.getAttribute('data-tooltip-theme') || '';
+  const placementPref = target.getAttribute('data-placement') || 'auto';
+  const follow = target.getAttribute('data-follow') === 'true';
+  const delay = parseInt(target.getAttribute('data-delay')||0,10);
+  const duration = parseInt(target.getAttribute('data-duration')||0,10);
+  const showProgress = target.getAttribute('data-progress') === 'true';
+
+  if (follow){
+    const node = ensureSharedTooltip();
+    node.className = `tooltip ${effect} show`;
+    node.dataset.theme = theme || '';
+    node.dataset.placement = 'bottom';
+    node.innerHTML = target.hasAttribute('data-tooltip-html') ? sanitizeHTML(html) : (text || html);
+    node.style.pointerEvents = 'none';
+    node.dataset.follow = 'true';
+    window.addEventListener('mousemove', followMouse);
+    if (duration) startProgress(node, duration);
+    return;
+  }
+
+  // respect delay
+  const timer = setTimeout(()=>{
+    const node = ensureSharedTooltip();
+    node.className = `tooltip ${effect} show`;
+    node.dataset.theme = theme || '';
+    node.dataset.placement = 'top';
+    node.innerHTML = target.hasAttribute('data-tooltip-html') ? html : sanitizeHTML(text || html);
+    node.style.pointerEvents = 'none';
+    node.dataset.follow = 'false';
+
+    node.style.left = '0px'; node.style.top = '0px';
+    const refRect = target.getBoundingClientRect();
+    const popRect = node.getBoundingClientRect();
+    const pos = computePosition(refRect, popRect, placementPref, DEFAULT.offset);
+    node.style.left = pos.left + 'px';
+    node.style.top = pos.top + 'px';
+    node.dataset.placement = pos.placement;
+    setArrowPosition(node, refRect, node.getBoundingClientRect(), pos.placement);
+    if (showProgress && duration) startProgress(node, duration);
+    if (duration && !showProgress){
+      setTimeout(()=> hideTooltipFor(target), duration);
     }
+  }, delay || DEFAULT.delayShow);
 
-    _initListeners() {
-      document.addEventListener('mouseover', (e) => {
-        const t = e.target.closest('[data-tooltip], [data-tooltip-html]');
-        if (!t) return;
-        this._prepareShow(t);
-      });
+  target._tooltipTimer = timer;
+}
 
-      document.addEventListener('mouseout', (e) => {
-        const t = e.target.closest('[data-tooltip], [data-tooltip-html]');
-        if (!t) return;
-        this._prepareHide(t);
-      });
+/* Hide shared */
+function hideSharedTooltip(target){
+  if (target && target._tooltipTimer){ clearTimeout(target._tooltipTimer); target._tooltipTimer=null; }
+  const node = ensureSharedTooltip();
+  if (node && node.dataset.follow === 'true'){ window.removeEventListener('mousemove', followMouse); node.dataset.follow='false'; }
+  if (node) node.classList.remove('show');
+  if (node && node._progressTimer){ clearInterval(node._progressTimer); node._progressTimer=null; const p = node.querySelector('.progress > b'); if (p) p.style.width='0%'; }
+}
+function hideTooltipFor(target){ hideSharedTooltip(target); }
 
-      document.addEventListener('focusin', (e) => {
-        const t = e.target.closest('[data-tooltip], [data-tooltip-html]');
-        if (!t) return;
-        this._prepareShow(t, true);
-      });
+/* Interactive tooltip (dedicated DOM node) */
+function showInteractiveTooltip(target){
+  let node = target._interactiveNode;
+  if (!node){
+    node = document.createElement('div');
+    node.className = 'tooltip interactive';
+    node.tabIndex = -1;
+    document.body.appendChild(node);
+    target._interactiveNode = node;
+  }
+  const html = target.getAttribute('data-tooltip-html') || target.getAttribute('data-tooltip') || '';
+  const effect = target.getAttribute('data-effect') || 'fade';
+  const theme = target.getAttribute('data-theme') || '';
+  const placementPref = target.getAttribute('data-placement') || 'auto';
 
-      document.addEventListener('focusout', (e) => {
-        const t = e.target.closest('[data-tooltip], [data-tooltip-html]');
-        if (!t) return;
-        this._prepareHide(t, true);
-      });
+  node.className = `tooltip interactive ${effect} show`;
+  node.dataset.theme = theme || '';
+  node.innerHTML = target.hasAttribute('data-tooltip-html') ? html : sanitizeHTML(html);
 
-      window.addEventListener('resize', this._reposition);
-      window.addEventListener('scroll', this._reposition, true);
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') this.hide();
-      });
-    }
+  node.style.left='0px'; node.style.top='0px';
+  const refRect = target.getBoundingClientRect();
+  const popRect = node.getBoundingClientRect();
+  const pos = computePosition(refRect, popRect, placementPref, DEFAULT.offset);
+  node.style.left = pos.left + 'px';
+  node.style.top = pos.top + 'px';
+  node.dataset.placement = pos.placement;
+  setArrowPosition(node, refRect, node.getBoundingClientRect(), pos.placement);
 
-    _ensureNode() {
-      if (this.tooltip && document.body.contains(this.tooltip)) return this.tooltip;
-      this.tooltip = document.createElement('div');
-      this.tooltip.className = 'tooltip';
-      this.tooltip.setAttribute('role','tooltip');
-      this.tooltip.style.position = 'fixed';
-      this.tooltip.style.left = '0px';
-      this.tooltip.style.top = '0px';
-      this.tooltip.tabIndex = -1;
-      document.body.appendChild(this.tooltip);
-      return this.tooltip;
-    }
-
-    _prepareShow(target, isFocus = false) {
-      clearTimeout(this.hideTimer);
-      const delayAttr = target.getAttribute('data-delay');
-      const delay = delayAttr ? parseInt(delayAttr, 10) : 0;
-      this.showTimer = setTimeout(() => this.show(target, isFocus), delay || 0);
-    }
-
-    _prepareHide(target, isFocus = false) {
-      clearTimeout(this.showTimer);
-      // short hide delay (avoid flicker)
-      this.hideTimer = setTimeout(() => this.hide(), 100);
-    }
-
-    show(target, isFocus = false) {
-      if (!target || !document.contains(target)) return;
-      const useHtml = target.hasAttribute('data-tooltip-html');
-      const text = useHtml ? target.getAttribute('data-tooltip-html') : target.getAttribute('data-tooltip') || '';
-      if (!text) return;
-
-      const node = this._ensureNode();
-      if (useHtml) node.innerHTML = sanitize(text); else node.textContent = text;
-
-      node.dataset.variant = target.getAttribute('data-variant') || '';
-      this.active = {
-        target,
-        follow: target.getAttribute('data-follow') === 'true',
-        interactive: target.getAttribute('data-interactive') === 'true',
-        preferred: target.getAttribute('data-placement') || 'top'
-      };
-
-      // set ARIA
-      if (!node.id) node.id = `tooltip-${Math.random().toString(36).slice(2,9)}`;
-      target.setAttribute('aria-describedby', node.id);
-
-      node.classList.add('show');
-      // if follow: listen to mousemove
-      if (this.active.follow) window.addEventListener('mousemove', this._onMove);
-      else window.removeEventListener('mousemove', this._onMove);
-
-      this._reposition();
-    }
-
-    hide() {
-      if (!this.tooltip) return;
-      this.tooltip.classList.remove('show');
-      if (this.active && this.active.target) this.active.target.removeAttribute('aria-describedby');
-      this.active = null;
-      window.removeEventListener('mousemove', this._onMove);
-      clearTimeout(this.showTimer);
-      clearTimeout(this.hideTimer);
-    }
-
-    _onMove(e) {
-      if (!this.tooltip || !this.active || !this.active.follow) return;
-      const node = this.tooltip;
-      const vw = getViewport();
-      // offset to keep a little distance
-      const left = Math.min(Math.max(e.clientX + 10, 6), vw.width - node.offsetWidth - 6);
-      const top  = Math.min(Math.max(e.clientY + 10, 6), vw.height - node.offsetHeight - 6);
-      node.style.left = `${Math.round(left)}px`;
-      node.style.top  = `${Math.round(top)}px`;
-      node.dataset.placement = 'bottom'; // not meaningful but keeps arrow style consistent
-    }
-
-    _reposition() {
-      const node = this.tooltip;
-      const state = this.active;
-      if (!node || !state || state.follow) return;
-      const target = state.target;
-      if (!document.contains(target)) { this.hide(); return; }
-
-      // reset so measurement accurate
-      node.style.left = '0px'; node.style.top = '0px';
-      const refRect = target.getBoundingClientRect();
-      const popRect = node.getBoundingClientRect();
-      const best = computePosition(refRect, popRect, state.preferred === 'auto' ? 'auto' : (state.preferred || 'top'), this.offset);
-
-      node.style.left = `${Math.round(best.left)}px`;
-      node.style.top  = `${Math.round(best.top)}px`;
-      node.dataset.placement = best.placement;
-
-      // compute arrow alignment: we want arrow to point at reference center as much as possible.
-      if (best.placement === 'top' || best.placement === 'bottom') {
-        const refCenter = refRect.left + refRect.width / 2;
-        // compute arrow left relative to tooltip
-        let arrowLeft = refCenter - best.left;
-        // clamp inside tooltip padding (10%..90%)
-        const min = Math.max(12, popRect.width * 0.12);
-        const max = Math.min(popRect.width - 12, popRect.width * 0.88);
-        arrowLeft = Math.max(min, Math.min(max, arrowLeft));
-        node.style.setProperty('--arrow-left', `${arrowLeft}px`);
-      } else { // left/right
-        const refCenter = refRect.top + refRect.height / 2;
-        let arrowTop = refCenter - best.top;
-        const min = Math.max(8, popRect.height * 0.12);
-        const max = Math.min(popRect.height - 8, popRect.height * 0.88);
-        arrowTop = Math.max(min, Math.min(max, arrowTop));
-        node.style.setProperty('--arrow-top', `${arrowTop}px`);
+  // outside click close
+  if (!node._clickHandler){
+    node._clickHandler = (ev) => {
+      if (!node.contains(ev.target) && !target.contains(ev.target)){
+        hideInteractiveTooltip(target);
       }
+    };
+    document.addEventListener('click', node._clickHandler);
+  }
+
+  // keyboard handling
+  node._keydown = (ev) => {
+    if (ev.key === 'Escape'){ hideInteractiveTooltip(target); return; }
+    if (ev.key === 'Tab'){
+      const focusables = Array.from(node.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'));
+      if (focusables.length === 0) return;
+      const first = focusables[0], last = focusables[focusables.length-1];
+      if (ev.shiftKey && document.activeElement === first){ ev.preventDefault(); last.focus(); }
+      else if (!ev.shiftKey && document.activeElement === last){ ev.preventDefault(); first.focus(); }
     }
+  };
+  node.addEventListener('keydown', node._keydown);
 
-    destroy() {
-      this.hide();
-      if (this.tooltip) this.tooltip.remove();
-      this.tooltip = null;
-      window.removeEventListener('resize', this._reposition);
-      window.removeEventListener('scroll', this._reposition, true);
-    }
-  } // end TooltipSystem
+  const f = node.querySelector('input, button, [tabindex]') || node;
+  f.focus();
+}
 
-  // PopoverSystem (click-to-open interactive)
-  class PopoverSystem {
-    constructor() {
-      this.active = null; // { trigger, node }
-      this.offset = 10;
-      this._reposition = rafThrottle(this._reposition.bind(this));
-      this._onDocClick = this._onDocClick.bind(this);
-      this._onKey = this._onKey.bind(this);
+function hideInteractiveTooltip(target){
+  const node = target._interactiveNode;
+  if (!node) return;
+  node.classList.remove('show');
+  if (node._clickHandler){ document.removeEventListener('click', node._clickHandler); node._clickHandler = null; }
+  if (node._keydown){ node.removeEventListener('keydown', node._keydown); node._keydown=null; }
+  setTimeout(()=> { if (node && node.parentNode) node.parentNode.removeChild(node); target._interactiveNode = null; }, 220);
+}
 
-      document.addEventListener('click', (e) => {
-        const t = e.target.closest('[data-popover]');
-        if (!t) return;
-        e.preventDefault();
-        if (this.active && this.active.trigger === t) { this.hide(); return; }
-        this.show(t, t.getAttribute('data-popover') || '');
+/* Central handlers */
+function handleShow(e){
+  const target = e.currentTarget || e.target;
+  if (!target) return;
+  const interactive = target.getAttribute('data-interactive') === 'true';
+  const sticky = target.getAttribute('data-sticky');
+  const duration = parseInt(target.getAttribute('data-duration')||0,10);
+
+  if (target.id === 'stackBtn'){ showSharedTooltip(target); setTimeout(()=> showSharedTooltip(target), 160); return; }
+  if (interactive) showInteractiveTooltip(target);
+  else showSharedTooltip(target);
+
+  if (sticky === 'true'){
+    target._stickyHandler = () => hideTooltipFor(target);
+    target.addEventListener('click', target._stickyHandler, { once:true });
+  } else if (sticky === 'once'){
+    const d = duration || 3000;
+    setTimeout(()=> hideTooltipFor(target), d);
+  }
+}
+
+function handleHide(e){
+  const target = e.currentTarget || e.target;
+  if (!target) return;
+  const interactive = target.getAttribute('data-interactive') === 'true';
+  if (interactive) hideInteractiveTooltip(target);
+  else hideSharedTooltip(target);
+}
+
+/* attach delegates to elements with data-tooltip */
+function attachDelegates(){
+  $$('[data-tooltip]').forEach(el => {
+    el.addEventListener('mouseenter', handleShow);
+    el.addEventListener('mouseleave', handleHide);
+    el.addEventListener('focusin', handleShow);
+    el.addEventListener('focusout', handleHide);
+
+    el.addEventListener('click', ()=>{
+      if (el.getAttribute('data-sticky') === 'true') {
+        if (el._stickyActive){ hideTooltipFor(el); el._stickyActive=false; }
+        else { handleShow({currentTarget:el}); el._stickyActive=true; }
+      }
+    });
+
+    const duration = parseInt(el.getAttribute('data-duration')||0,10);
+    if (duration && el.getAttribute('data-progress') !== 'true'){
+      el.addEventListener('mouseenter', ()=>{
+        if (el._durationTimer) clearTimeout(el._durationTimer);
+        el._durationTimer = setTimeout(()=> hideSharedTooltip(el), duration);
       });
+      el.addEventListener('mouseleave', ()=> { if (el._durationTimer) clearTimeout(el._durationTimer); });
     }
+  });
 
-    show(trigger, html) {
-      this.hide();
-      const node = document.createElement('div');
-      node.className = 'popover';
-      node.tabIndex = -1;
-      node.innerHTML = sanitize(html);
-      document.body.appendChild(node);
+  window.addEventListener('scroll', () => { const node = sharedTooltip; if (node && node.classList.contains('show')) { node.classList.remove('show'); } }, true);
+  window.addEventListener('resize', () => { const node = sharedTooltip; if (node && node.classList.contains('show')) { node.classList.remove('show'); } });
+}
 
-      this.active = { trigger, node };
-      trigger.setAttribute('aria-expanded','true');
-      this._position(trigger, node);
-      requestAnimationFrame(()=> node.classList.add('show'));
-
-      // focus first focusable inside (if any)
-      const first = node.querySelector('input, button, [href], [tabindex]:not([tabindex="-1"])');
-      (first || node).focus();
-
-      document.addEventListener('click', this._onDocClick);
-      document.addEventListener('keydown', this._onKey);
-      window.addEventListener('resize', this._reposition);
-      window.addEventListener('scroll', this._reposition, true);
-    }
-
-    hide() {
-      if (!this.active) return;
-      const { trigger, node } = this.active;
-      node.remove();
-      try { trigger.focus(); } catch(e){}
-      trigger.setAttribute('aria-expanded','false');
-      this.active = null;
-      document.removeEventListener('click', this._onDocClick);
-      document.removeEventListener('keydown', this._onKey);
-      window.removeEventListener('resize', this._reposition);
-      window.removeEventListener('scroll', this._reposition, true);
-    }
-
-    _onDocClick(e) {
-      if (!this.active) return;
-      const { node, trigger } = this.active;
-      if (node.contains(e.target) || trigger.contains(e.target)) return;
-      this.hide();
-    }
-
-    _onKey(e) {
-      if (e.key === 'Escape') this.hide();
-    }
-
-    _position(trigger, node) {
-      node.style.left = '0px'; node.style.top = '0px';
-      const refRect = trigger.getBoundingClientRect();
-      const popRect = node.getBoundingClientRect();
-      const pref = trigger.getAttribute('data-placement') || 'bottom';
-      const best = computePosition(refRect, popRect, pref, this.offset);
-      node.style.left = `${Math.round(best.left)}px`;
-      node.style.top  = `${Math.round(best.top)}px`;
-    }
-
-    _reposition() {
-      if (!this.active) return;
-      const { trigger, node } = this.active;
-      if (!document.contains(trigger) || !document.contains(node)) { this.hide(); return; }
-      this._position(trigger, node);
-    }
-  } // end PopoverSystem
-
-  // initialize
-  const tips = new TooltipSystem();
-  const pops = new PopoverSystem();
-
-  // Expose for debugging in console (optional)
-  window.__SmartTooltip = tips;
-  window.__SmartPopover = pops;
-})();
+/* init on DOM ready */
+document.addEventListener('DOMContentLoaded', () => {
+  attachDelegates();
+  // expose debug handles
+  window.__tooltipSystem = {
+    showFor: (sel)=>{ const el=document.querySelector(sel); if(el) showSharedTooltip(el); },
+    hideFor: (sel)=>{ const el=document.querySelector(sel); if(el) hideSharedTooltip(el); }
+  };
+});
